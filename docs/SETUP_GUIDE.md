@@ -19,7 +19,7 @@
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/dparsail/heart-disease-mlops.git
+git clone https://github.com/dharmendra-2025cs05041/heart-disease-mlops.git
 cd heart-disease-mlops
 ```
 

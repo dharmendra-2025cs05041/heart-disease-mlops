@@ -1,6 +1,6 @@
 # Heart Disease Risk Prediction — MLOps Pipeline
 
-[![CI/CD Pipeline](https://github.com/dparsail/heart-disease-mlops/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/dparsail/heart-disease-mlops/actions)
+[![CI/CD Pipeline](https://github.com/dharmendra-2025cs05041/heart-disease-mlops/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/dharmendra-2025cs05041/heart-disease-mlops/actions)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
@@ -161,3 +161,7 @@ Released under the MIT licence — see [`LICENSE`](LICENSE).
 
 Dharmendra Parsaila (2025CS05041) — M.Tech, Semester 2, MLOps
 Assignment 1.
+
+## Repository
+
+<https://github.com/dharmendra-2025cs05041/heart-disease-mlops>
