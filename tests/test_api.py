@@ -1,6 +1,7 @@
 """
 Unit tests for API endpoints
 """
+
 import pytest
 from fastapi.testclient import TestClient
 import sys
@@ -16,20 +17,20 @@ client = TestClient(app)
 
 class TestHealthEndpoints:
     """Tests for health check endpoints"""
-    
+
     def test_root_endpoint(self):
         """Test root endpoint"""
         response = client.get("/")
-        
+
         assert response.status_code == 200
         data = response.json()
         assert "message" in data
         assert data["status"] == "running"
-    
+
     def test_health_endpoint(self):
         """Test health check endpoint"""
         response = client.get("/health")
-        
+
         assert response.status_code == 200
         data = response.json()
         assert "status" in data
@@ -40,7 +41,7 @@ class TestHealthEndpoints:
 
 class TestPredictionEndpoint:
     """Tests for prediction endpoint"""
-    
+
     def test_predict_endpoint_valid_input(self):
         """Test prediction with valid input"""
         # Note: This will fail if model is not loaded, which is expected in test environment
@@ -57,14 +58,14 @@ class TestPredictionEndpoint:
             "oldpeak": 2.3,
             "slope": 0,
             "ca": 0,
-            "thal": 1
+            "thal": 1,
         }
-        
+
         response = client.post("/predict", json=patient_data)
-        
+
         # Will be 503 if model not loaded, or 200 if loaded
         assert response.status_code in [200, 503]
-    
+
     def test_predict_endpoint_invalid_age(self):
         """Test prediction with invalid age"""
         patient_data = {
@@ -80,13 +81,13 @@ class TestPredictionEndpoint:
             "oldpeak": 2.3,
             "slope": 0,
             "ca": 0,
-            "thal": 1
+            "thal": 1,
         }
-        
+
         response = client.post("/predict", json=patient_data)
-        
+
         assert response.status_code == 422  # Validation error
-    
+
     def test_predict_endpoint_missing_field(self):
         """Test prediction with missing required field"""
         patient_data = {
@@ -94,11 +95,11 @@ class TestPredictionEndpoint:
             "sex": 1,
             # Missing other required fields
         }
-        
+
         response = client.post("/predict", json=patient_data)
-        
+
         assert response.status_code == 422  # Validation error
-    
+
     def test_predict_endpoint_invalid_type(self):
         """Test prediction with invalid data type"""
         patient_data = {
@@ -114,54 +115,54 @@ class TestPredictionEndpoint:
             "oldpeak": 2.3,
             "slope": 0,
             "ca": 0,
-            "thal": 1
+            "thal": 1,
         }
-        
+
         response = client.post("/predict", json=patient_data)
-        
+
         assert response.status_code == 422  # Validation error
 
 
 class TestInfoEndpoints:
     """Tests for info endpoints"""
-    
+
     def test_info_endpoint(self):
         """Test model info endpoint"""
         response = client.get("/info")
-        
+
         # Will be 503 if model not loaded, or 200 if loaded
         assert response.status_code in [200, 503]
-    
+
     def test_metrics_endpoint(self):
         """Test metrics endpoint"""
         response = client.get("/metrics")
-        
+
         assert response.status_code == 200
         assert response.headers["content-type"] == "text/plain; charset=utf-8"
 
 
 class TestAPIDocumentation:
     """Tests for API documentation"""
-    
+
     def test_openapi_schema(self):
         """Test OpenAPI schema is available"""
         response = client.get("/openapi.json")
-        
+
         assert response.status_code == 200
         data = response.json()
         assert "openapi" in data
         assert "paths" in data
-    
+
     def test_docs_endpoint(self):
         """Test Swagger UI is available"""
         response = client.get("/docs")
-        
+
         assert response.status_code == 200
-    
+
     def test_redoc_endpoint(self):
         """Test ReDoc is available"""
         response = client.get("/redoc")
-        
+
         assert response.status_code == 200
 
 

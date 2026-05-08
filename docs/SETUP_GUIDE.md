@@ -114,36 +114,93 @@ API will be available at:
 
 ### Testing the API
 
+The full smoke-test (root, health, info, prediction × 2, validation
+error, Prometheus metrics) lives in `scripts/test_api.sh`. It targets
+`http://localhost:8000` by default and accepts a `BASE_URL` override:
+
+```bash
+bash scripts/test_api.sh                                              # local
+BASE_URL=https://dharmendra-2025cs05041-heart-disease-api.hf.space \
+  bash scripts/test_api.sh                                            # live
+```
+
+#### Positive case — high-risk patient
+
 ```bash
 curl -X POST http://localhost:8000/predict \
   -H "Content-Type: application/json" \
-  -d '{
-    "age": 63,
-    "sex": 1,
-    "cp": 3,
-    "trestbps": 145,
-    "chol": 233,
-    "fbs": 1,
-    "restecg": 0,
-    "thalach": 150,
-    "exang": 0,
-    "oldpeak": 2.3,
-    "slope": 0,
-    "ca": 0,
-    "thal": 1
-  }'
+  -d '{"age":67,"sex":1,"cp":0,"trestbps":160,"chol":286,"fbs":0,"restecg":0,
+       "thalach":108,"exang":1,"oldpeak":1.5,"slope":1,"ca":3,"thal":2}'
 ```
 
-Expected response:
+Expected (against the live HF endpoint, Random Forest):
 ```json
 {
   "prediction": 1,
-  "probability_no_disease": 0.23,
-  "probability_disease": 0.77,
-  "confidence": 0.77,
-  "risk_level": "High"
+  "probability_no_disease": 0.396,
+  "probability_disease":   0.604,
+  "confidence":            0.604,
+  "risk_level": "Moderate"
 }
 ```
+
+#### Negative case — low-risk patient
+
+```bash
+curl -X POST http://localhost:8000/predict \
+  -H "Content-Type: application/json" \
+  -d '{"age":45,"sex":0,"cp":1,"trestbps":120,"chol":200,"fbs":0,"restecg":0,
+       "thalach":170,"exang":0,"oldpeak":0.5,"slope":1,"ca":0,"thal":2}'
+```
+
+Expected:
+```json
+{
+  "prediction": 0,
+  "probability_no_disease": 0.970,
+  "probability_disease":   0.030,
+  "confidence":            0.970,
+  "risk_level": "Low"
+}
+```
+
+#### Validation-error case — out-of-range fields
+
+```bash
+curl -X POST http://localhost:8000/predict \
+  -H "Content-Type: application/json" \
+  -d '{"age":250,"sex":5,"cp":3,"trestbps":145,"chol":233,"fbs":1,"restecg":0,
+       "thalach":150,"exang":0,"oldpeak":2.3,"slope":0,"ca":0,"thal":1}'
+```
+
+Expected (HTTP 422):
+```json
+{
+  "detail": [
+    {"loc":["body","age"],"msg":"Input should be less than or equal to 120","type":"less_than_equal"},
+    {"loc":["body","sex"],"msg":"Input should be less than or equal to 1","type":"less_than_equal"}
+  ]
+}
+```
+
+### Testing the live (Hugging Face) deployment
+
+The same image runs publicly on Hugging Face Spaces. Replace
+`http://localhost:8000` in any of the commands above with:
+
+```
+https://dharmendra-2025cs05041-heart-disease-api.hf.space
+```
+
+| Resource     | URL                                                                 |
+|--------------|---------------------------------------------------------------------|
+| Live API     | <https://dharmendra-2025cs05041-heart-disease-api.hf.space>         |
+| Swagger UI   | <https://dharmendra-2025cs05041-heart-disease-api.hf.space/docs>    |
+| Health       | <https://dharmendra-2025cs05041-heart-disease-api.hf.space/health>  |
+| Space page   | <https://huggingface.co/spaces/dharmendra-2025cs05041/heart-disease-api> |
+
+The Space sleeps when idle (free tier), so the first request after
+inactivity may take ~30 s while the container cold-starts.
 
 ## Running Tests
 

@@ -2,11 +2,11 @@
 FastAPI application for heart disease prediction
 Production-ready API with logging and monitoring
 """
+
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field, validator
-from prometheus_client import Counter, Histogram, generate_latest
 from fastapi.responses import Response
+from pydantic import BaseModel, Field
+from prometheus_client import Counter, Histogram, generate_latest
 import time
 import logging
 import sys
@@ -22,18 +22,19 @@ from src.models.predictor import HeartDiseasePredictor
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('api.log'),
-        logging.StreamHandler()
-    ]
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[logging.FileHandler("api.log"), logging.StreamHandler()],
 )
 logger = logging.getLogger(__name__)
 
 # Prometheus metrics
-REQUEST_COUNT = Counter('prediction_requests_total', 'Total prediction requests')
-REQUEST_LATENCY = Histogram('prediction_request_latency_seconds', 'Prediction request latency')
-PREDICTION_COUNTER = Counter('predictions_by_class', 'Predictions by class', ['predicted_class'])
+REQUEST_COUNT = Counter("prediction_requests_total", "Total prediction requests")
+REQUEST_LATENCY = Histogram(
+    "prediction_request_latency_seconds", "Prediction request latency"
+)
+PREDICTION_COUNTER = Counter(
+    "predictions_by_class", "Predictions by class", ["predicted_class"]
+)
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -41,27 +42,38 @@ app = FastAPI(
     description="ML-powered API for predicting heart disease risk",
     version="1.0.0",
     docs_url="/docs",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
 )
 
 
 # Pydantic models for request/response validation
 class PatientData(BaseModel):
     """Input features for heart disease prediction"""
+
     age: int = Field(..., ge=1, le=120, description="Age in years")
     sex: int = Field(..., ge=0, le=1, description="Sex (1=male, 0=female)")
     cp: int = Field(..., ge=0, le=3, description="Chest pain type (0-3)")
-    trestbps: int = Field(..., ge=50, le=250, description="Resting blood pressure (mm Hg)")
+    trestbps: int = Field(
+        ..., ge=50, le=250, description="Resting blood pressure (mm Hg)"
+    )
     chol: int = Field(..., ge=100, le=600, description="Serum cholesterol (mg/dl)")
-    fbs: int = Field(..., ge=0, le=1, description="Fasting blood sugar > 120 mg/dl (1=true, 0=false)")
+    fbs: int = Field(
+        ..., ge=0, le=1, description="Fasting blood sugar > 120 mg/dl (1=true, 0=false)"
+    )
     restecg: int = Field(..., ge=0, le=2, description="Resting ECG results (0-2)")
     thalach: int = Field(..., ge=60, le=220, description="Maximum heart rate achieved")
-    exang: int = Field(..., ge=0, le=1, description="Exercise induced angina (1=yes, 0=no)")
-    oldpeak: float = Field(..., ge=0, le=10, description="ST depression induced by exercise")
-    slope: int = Field(..., ge=0, le=2, description="Slope of peak exercise ST segment (0-2)")
+    exang: int = Field(
+        ..., ge=0, le=1, description="Exercise induced angina (1=yes, 0=no)"
+    )
+    oldpeak: float = Field(
+        ..., ge=0, le=10, description="ST depression induced by exercise"
+    )
+    slope: int = Field(
+        ..., ge=0, le=2, description="Slope of peak exercise ST segment (0-2)"
+    )
     ca: int = Field(..., ge=0, le=4, description="Number of major vessels (0-4)")
     thal: int = Field(..., ge=0, le=3, description="Thalassemia (0-3)")
-    
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -77,14 +89,17 @@ class PatientData(BaseModel):
                 "oldpeak": 2.3,
                 "slope": 0,
                 "ca": 0,
-                "thal": 1
+                "thal": 1,
             }
         }
 
 
 class PredictionResponse(BaseModel):
     """Response model for predictions"""
-    prediction: int = Field(..., description="Predicted class (0=No Disease, 1=Disease)")
+
+    prediction: int = Field(
+        ..., description="Predicted class (0=No Disease, 1=Disease)"
+    )
     probability_no_disease: float = Field(..., description="Probability of no disease")
     probability_disease: float = Field(..., description="Probability of disease")
     confidence: float = Field(..., description="Prediction confidence")
@@ -93,6 +108,7 @@ class PredictionResponse(BaseModel):
 
 class HealthResponse(BaseModel):
     """Health check response"""
+
     status: str
     model_loaded: bool
     version: str
@@ -124,16 +140,16 @@ async def startup_event():
 async def log_requests(request: Request, call_next):
     """Middleware to log all requests"""
     start_time = time.time()
-    
+
     response = await call_next(request)
-    
+
     duration = time.time() - start_time
     logger.info(
         f"{request.method} {request.url.path} "
         f"Status: {response.status_code} "
         f"Duration: {duration:.4f}s"
     )
-    
+
     return response
 
 
@@ -143,7 +159,7 @@ async def root():
     return {
         "message": "Heart Disease Prediction API",
         "status": "running",
-        "docs": "/docs"
+        "docs": "/docs",
     }
 
 
@@ -153,7 +169,7 @@ async def health_check():
     return {
         "status": "healthy",
         "model_loaded": predictor is not None,
-        "version": "1.0.0"
+        "version": "1.0.0",
     }
 
 
@@ -185,7 +201,7 @@ async def predict(patient_data: PatientData):
         result = predictor.predict_proba(features)
 
         # Update metrics
-        PREDICTION_COUNTER.labels(predicted_class=str(result['prediction'])).inc()
+        PREDICTION_COUNTER.labels(predicted_class=str(result["prediction"])).inc()
         REQUEST_LATENCY.observe(time.time() - start_time)
 
         # Log prediction
@@ -218,15 +234,9 @@ async def model_info():
         "model_type": str(type(predictor.model).__name__),
         "features": predictor.feature_names,
         "n_features": len(predictor.feature_names),
-        "description": "Heart disease prediction model trained on UCI dataset"
+        "description": "Heart disease prediction model trained on UCI dataset",
     }
 
 
 if __name__ == "__main__":
-    uvicorn.run(
-        "app:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=True,
-        log_level="info"
-    )
+    uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True, log_level="info")
