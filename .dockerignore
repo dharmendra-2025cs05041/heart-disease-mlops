@@ -1,0 +1,52 @@
+# Build context exclusions for the API image.
+# The runtime image only needs src/, models/, requirements.txt.
+
+# Version control
+.git
+.gitignore
+.gitattributes
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+*.egg-info
+.venv
+venv
+env
+
+# Test + coverage outputs
+.pytest_cache
+.coverage
+coverage.xml
+htmlcov
+
+# MLflow + training history
+mlruns
+
+# Notebooks, data exploration
+notebooks
+*.ipynb
+
+# Raw data (model already encodes what it needs)
+data
+
+# Documentation, screenshots, reports
+docs
+screenshots
+demo
+*.md
+*.docx
+LICENSE
+
+# Local logs
+*.log
+
+# Editor / OS noise
+.idea
+.vscode
+.DS_Store
+
+# CI configuration (already handled by GitHub Actions)
+.github

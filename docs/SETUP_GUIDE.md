@@ -1,0 +1,279 @@
+# Setup Guide - Heart Disease Prediction MLOps Project
+
+## Prerequisites
+
+### Required Software
+- Python 3.9 or higher
+- Docker Desktop (for containerization)
+- Kubernetes (Minikube or Docker Desktop Kubernetes)
+- Git
+- kubectl (Kubernetes CLI)
+
+### Optional Tools
+- MLflow (included in requirements.txt)
+- Prometheus & Grafana (for monitoring)
+- VSCode or PyCharm (IDE)
+
+## Installation Steps
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/dparsail/heart-disease-mlops.git
+cd heart-disease-mlops
+```
+
+### 2. Create Virtual Environment
+
+```bash
+# Using venv
+python -m venv venv
+
+# Activate on macOS/Linux
+source venv/bin/activate
+
+# Activate on Windows
+venv\Scripts\activate
+```
+
+### 3. Install Dependencies
+
+```bash
+pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+### 4. Download Dataset
+
+```bash
+python scripts/download_data.py
+```
+
+Expected output:
+```
+INFO - Downloading dataset from UCI ML Repository
+INFO - Raw data saved to data/heart_disease_raw.data
+INFO - Processed CSV saved to data/heart_disease.csv
+INFO - Dataset shape: (303, 14)
+INFO - ✓ Dataset download completed successfully!
+```
+
+### 5. Run Exploratory Data Analysis
+
+```bash
+jupyter notebook notebooks/01_eda.ipynb
+```
+
+## Training Models
+
+### Option 1: Using Python Script
+
+```bash
+python src/models/train.py
+```
+
+This will:
+- Load and preprocess the data
+- Train 4 different models (Logistic Regression, Random Forest, Gradient Boosting, SVM)
+- Perform hyperparameter tuning with GridSearchCV
+- Log experiments to MLflow
+- Save trained models to `models/` directory
+
+### Option 2: Using Jupyter Notebook
+
+```bash
+jupyter notebook notebooks/02_model_training.ipynb
+```
+
+## Viewing MLflow Experiments
+
+```bash
+mlflow ui --port 5000
+```
+
+Then open browser: http://localhost:5000
+
+## Running the API Locally
+
+### Option 1: Direct Python Execution
+
+```bash
+python src/api/app.py
+```
+
+### Option 2: Using Uvicorn
+
+```bash
+uvicorn src.api.app:app --reload --port 8000
+```
+
+API will be available at:
+- API: http://localhost:8000
+- Swagger UI: http://localhost:8000/docs
+- ReDoc: http://localhost:8000/redoc
+
+### Testing the API
+
+```bash
+curl -X POST http://localhost:8000/predict \
+  -H "Content-Type: application/json" \
+  -d '{
+    "age": 63,
+    "sex": 1,
+    "cp": 3,
+    "trestbps": 145,
+    "chol": 233,
+    "fbs": 1,
+    "restecg": 0,
+    "thalach": 150,
+    "exang": 0,
+    "oldpeak": 2.3,
+    "slope": 0,
+    "ca": 0,
+    "thal": 1
+  }'
+```
+
+Expected response:
+```json
+{
+  "prediction": 1,
+  "probability_no_disease": 0.23,
+  "probability_disease": 0.77,
+  "confidence": 0.77,
+  "risk_level": "High"
+}
+```
+
+## Running Tests
+
+### Run All Tests
+
+```bash
+pytest tests/ -v
+```
+
+### Run with Coverage
+
+```bash
+pytest tests/ -v --cov=src --cov-report=html
+```
+
+View coverage report: `open htmlcov/index.html`
+
+### Run Specific Test File
+
+```bash
+pytest tests/test_data_processing.py -v
+pytest tests/test_models.py -v
+pytest tests/test_api.py -v
+```
+
+## Docker Deployment
+
+### Build Docker Image
+
+```bash
+docker build -t heart-disease-api:latest -f deployment/docker/Dockerfile .
+```
+
+### Run Docker Container
+
+```bash
+docker run -d -p 8000:8000 --name heart-disease-api heart-disease-api:latest
+```
+
+### Test Docker Container
+
+```bash
+curl http://localhost:8000/health
+```
+
+### View Logs
+
+```bash
+docker logs heart-disease-api
+```
+
+### Stop Container
+
+```bash
+docker stop heart-disease-api
+docker rm heart-disease-api
+```
+
+## Kubernetes Deployment
+
+### Start Minikube (if using)
+
+```bash
+minikube start
+```
+
+### Deploy Application
+
+```bash
+kubectl apply -f deployment/kubernetes/deployment.yaml
+```
+
+### Check Deployment Status
+
+```bash
+kubectl get deployments
+kubectl get pods
+kubectl get services
+```
+
+### Access the Service
+
+```bash
+# Get service URL
+minikube service heart-disease-api-service --url
+
+# Or use port forwarding
+kubectl port-forward service/heart-disease-api-service 8000:80
+```
+
+### Deploy Monitoring
+
+```bash
+kubectl apply -f deployment/kubernetes/monitoring.yaml
+```
+
+Access monitoring:
+- Prometheus: http://localhost:30090
+- Grafana: http://localhost:30300 (admin/admin)
+
+## Troubleshooting
+
+### Issue: Module not found
+```bash
+# Ensure you're in the project root and virtual environment is activated
+export PYTHONPATH="${PYTHONPATH}:$(pwd)"
+```
+
+### Issue: Port already in use
+```bash
+# Kill process on port 8000
+lsof -ti:8000 | xargs kill -9
+```
+
+### Issue: Docker build fails
+```bash
+# Clean Docker cache
+docker system prune -a
+```
+
+### Issue: MLflow experiments not showing
+```bash
+# Check mlruns directory exists
+ls -la mlruns/
+```
+
+## Next Steps
+
+1. ✅ Explore the API documentation at `/docs`
+2. ✅ View MLflow experiments
+3. ✅ Review model performance in notebooks
+4. ✅ Deploy to cloud (GCP/AWS/Azure)
+5. ✅ Set up CI/CD pipeline with GitHub Actions

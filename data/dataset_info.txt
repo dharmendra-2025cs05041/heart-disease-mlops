@@ -1,0 +1,48 @@
+Heart Disease UCI Dataset Information
+==================================================
+
+Source: https://archive.ics.uci.edu/ml/machine-learning-databases/heart-disease/processed.cleveland.data
+
+Shape: (303, 14)
+Rows: 303
+Columns: 14
+
+Column Names and Descriptions:
+--------------------------------------------------
+1. age
+2. sex
+3. cp
+4. trestbps
+5. chol
+6. fbs
+7. restecg
+8. thalach
+9. exang
+10. oldpeak
+11. slope
+12. ca
+13. thal
+14. target
+
+Missing Values:
+age         0
+sex         0
+cp          0
+trestbps    0
+chol        0
+fbs         0
+restecg     0
+thalach     0
+exang       0
+oldpeak     0
+slope       0
+ca          4
+thal        2
+target      0
+dtype: int64
+
+Target Distribution:
+target
+0    164
+1    139
+Name: count, dtype: int64
