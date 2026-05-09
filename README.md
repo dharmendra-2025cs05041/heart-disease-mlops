@@ -102,12 +102,19 @@ python -m uvicorn src.api.app:app --host 0.0.0.0 --port 8000
 # Metrics:     http://localhost:8000/metrics
 ```
 
-A sample payload lives at `scripts/sample_payload.json`:
+Three labelled sample payloads ship with the repo, mirrored in the
+Swagger Examples dropdown on `POST /predict`:
+
+| File                                      | Scenario                              | Expected response                          |
+|-------------------------------------------|---------------------------------------|--------------------------------------------|
+| `scripts/sample_payload_high_risk.json`   | 🔴 67 y/o male, asymptomatic CP, 3 vessels | `prediction:1`, `risk_level:"High"`        |
+| `scripts/sample_payload_low_risk.json`    | 🟢 45 y/o female, atypical angina, 0 vessels | `prediction:0`, `risk_level:"Low"`         |
+| `scripts/sample_payload.json` *(legacy)*  | Generic single payload                | `prediction:1` (kept for backward compat)  |
 
 ```bash
 curl -X POST http://localhost:8000/predict \
   -H 'Content-Type: application/json' \
-  -d @scripts/sample_payload.json
+  -d @scripts/sample_payload_high_risk.json
 ```
 
 For a more thorough check, `scripts/test_api.sh` walks through every
@@ -170,10 +177,40 @@ cloning or building anything:
 | Health probe | <https://dharmendra-2025cs05041-heart-disease-api.hf.space/health>  |
 | Space page   | <https://huggingface.co/spaces/dharmendra-2025cs05041/heart-disease-api> |
 
+**Try it from the browser, zero install:**
+1. Open the Swagger UI link above.
+2. The **Servers** dropdown at the top is pre-set to the public Hugging
+   Face Space (an alternate *Local* entry is listed for self-hosters).
+3. Expand `POST /predict` → **Try it out** → pick one of the three
+   labelled entries from the **Examples** dropdown (🔴 High-risk /
+   🟢 Low-risk / ❌ Invalid payload) → **Execute**.
+
+Permissive CORS (`allow_origins=["*"]`) is enabled in `src/api/app.py`,
+so the *Try it out* button also works when the Swagger UI is opened
+from a different origin (e.g. localhost loading the HF backend).
+
 The Space sleeps after periods of inactivity; the first request after
 a sleep takes ~30 s while the container cold-starts.
 
 **Bring up the full monitoring stack (API + Prometheus + Grafana)**
+
+The recommended one-shot path tears down any previous stack, rebuilds
+the api image with `--no-cache` (so the latest Swagger Examples land
+inside the container), waits for `/health`, smoke-tests both labelled
+payloads, fires a 30+30 warm-up burst so the *Disease vs No-Disease*
+and *Predictions by class* panels are populated immediately, and
+prints every URL:
+
+```bash
+bash scripts/run_demo_stack.sh
+# api/prometheus/grafana up + warm-up burst sent + URLs printed
+```
+
+Other modes: `--burst-only` (refresh metrics between demo takes),
+`--status` (show stack + URLs without sending traffic), `--no-rebuild`
+(reuse cached image), `--down` / `--down --purge` (tear down).
+
+Manual fallback if the orchestrator script is unavailable:
 
 ```bash
 docker compose -f deployment/docker/docker-compose.yml up -d
@@ -183,8 +220,10 @@ docker compose -f deployment/docker/docker-compose.yml up -d
 ```
 
 Grafana is provisioned at boot with the Prometheus datasource and a
-dashboard called *Heart Disease API — Live Metrics* (request rate,
-latency percentiles, predictions broken down by class).
+7-panel dashboard at <http://localhost:3000/d/heart-disease-api>
+(*Heart Disease API — Live Metrics* — total requests, request rate,
+p95 latency, disease vs no-disease split, request rate over time,
+latency percentiles p50/p90/p99, predictions by class rate).
 
 **Deploy to Kubernetes**
 

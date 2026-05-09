@@ -124,13 +124,20 @@ BASE_URL=https://dharmendra-2025cs05041-heart-disease-api.hf.space \
   bash scripts/test_api.sh                                            # live
 ```
 
+The same payloads are also available as standalone JSON files for
+copy-paste curl or for the Swagger Examples dropdown on `POST /predict`:
+
+| File                                      | Scenario                  | Expected response                          |
+|-------------------------------------------|---------------------------|--------------------------------------------|
+| `scripts/sample_payload_high_risk.json`   | 🔴 high-risk patient      | `prediction:1`, `risk_level:"High"`        |
+| `scripts/sample_payload_low_risk.json`    | 🟢 low-risk patient       | `prediction:0`, `risk_level:"Low"`         |
+
 #### Positive case — high-risk patient
 
 ```bash
 curl -X POST http://localhost:8000/predict \
   -H "Content-Type: application/json" \
-  -d '{"age":67,"sex":1,"cp":0,"trestbps":160,"chol":286,"fbs":0,"restecg":0,
-       "thalach":108,"exang":1,"oldpeak":1.5,"slope":1,"ca":3,"thal":2}'
+  -d @scripts/sample_payload_high_risk.json
 ```
 
 Expected (against the live HF endpoint, Random Forest):
@@ -149,8 +156,7 @@ Expected (against the live HF endpoint, Random Forest):
 ```bash
 curl -X POST http://localhost:8000/predict \
   -H "Content-Type: application/json" \
-  -d '{"age":45,"sex":0,"cp":1,"trestbps":120,"chol":200,"fbs":0,"restecg":0,
-       "thalach":170,"exang":0,"oldpeak":0.5,"slope":1,"ca":0,"thal":2}'
+  -d @scripts/sample_payload_low_risk.json
 ```
 
 Expected:
@@ -228,13 +234,41 @@ pytest tests/test_api.py -v
 
 ## Docker Deployment
 
-### Build Docker Image
+### One-shot demo stack (recommended)
+
+The fastest way to bring up the full local demo (api + Prometheus +
+Grafana with both Swagger Examples populated and Grafana panels
+warmed up) is the orchestrator script. It rebuilds the api image
+with `--no-cache`, brings the stack up, smoke-tests both labelled
+payloads, fires a 30+30 warm-up burst, and prints every URL:
+
+```bash
+bash scripts/run_demo_stack.sh
+```
+
+Other modes:
+
+```bash
+bash scripts/run_demo_stack.sh --burst-only   # refresh metrics between demo takes
+bash scripts/run_demo_stack.sh --status       # show stack + URLs, no traffic
+bash scripts/run_demo_stack.sh --no-rebuild   # reuse cached image
+bash scripts/run_demo_stack.sh --down         # stop stack (keep volumes)
+bash scripts/run_demo_stack.sh --down --purge # stop stack + wipe prom/grafana data
+```
+
+After a successful run, open:
+
+- API + Swagger : <http://localhost:8000/docs>
+- Prometheus    : <http://localhost:9090/targets>
+- Grafana       : <http://localhost:3000/d/heart-disease-api> (admin/admin, *Last 15 minutes*)
+
+### Build Docker Image (manual)
 
 ```bash
 docker build -t heart-disease-api:latest -f deployment/docker/Dockerfile .
 ```
 
-### Run Docker Container
+### Run Docker Container (manual, single container)
 
 ```bash
 docker run -d -p 8000:8000 --name heart-disease-api heart-disease-api:latest

@@ -56,6 +56,18 @@ loaded.
 Open the [Swagger UI](https://dharmendra-2025cs05041-heart-disease-api.hf.space/docs)
 or use the curl samples below.
 
+The Swagger UI ships with two convenience features for evaluators:
+
+- A **Servers** dropdown at the top, pre-set to this public Space
+  (with an alternate *Local* entry for self-hosters).
+- An **Examples** dropdown on `POST /predict` with three labelled
+  scenarios — 🔴 High-risk patient, 🟢 Low-risk patient,
+  ❌ Invalid payload — so you can run a representative request
+  without typing any JSON.
+
+Permissive CORS is enabled, so the *Try it out* button also works when
+the Swagger UI is opened from a different origin.
+
 > The free CPU Space sleeps when idle, so the very first request after
 > a period of inactivity takes ~30 s while the container cold-starts.
 > Subsequent requests respond in well under 100 ms.

@@ -228,7 +228,10 @@ def train_models(
                 config["params"],
                 cv=5,
                 scoring="roc_auc",
-                n_jobs=-1,
+                # n_jobs=1 (serial) — parallel workers add no measurable speedup
+                # on this 303-row dataset and avoid loky/ResourceTracker
+                # shutdown warnings on macOS Python 3.12 (ChildProcessError 10).
+                n_jobs=1,
                 verbose=0,
             )
 

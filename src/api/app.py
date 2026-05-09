@@ -3,7 +3,8 @@ FastAPI application for heart disease prediction
 Production-ready API with logging and monitoring
 """
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import Body, FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from pydantic import BaseModel, Field
 from prometheus_client import Counter, Histogram, generate_latest
@@ -36,13 +37,40 @@ PREDICTION_COUNTER = Counter(
     "predictions_by_class", "Predictions by class", ["predicted_class"]
 )
 
-# Initialize FastAPI app
+# Initialize FastAPI app.
+# `servers` adds a dropdown to Swagger UI so evaluators can flip between the
+# public Hugging Face Space and a local instance without leaving the page.
+# Listed HF first so /docs defaults to the public backend on either deployment.
 app = FastAPI(
     title="Heart Disease Prediction API",
-    description="ML-powered API for predicting heart disease risk",
+    description=(
+        "ML-powered API for predicting heart disease risk.\n\n"
+        "Use the **Servers** dropdown above to choose which environment "
+        "the *Try it out* button targets — the public Hugging Face Space "
+        "(default, no install required) or a locally running instance."
+    ),
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
+    servers=[
+        {
+            "url": "https://dharmendra-2025cs05041-heart-disease-api.hf.space",
+            "description": "Public Hugging Face Space (no install required)",
+        },
+        {
+            "url": "http://localhost:8000",
+            "description": "Local docker-compose / uvicorn",
+        },
+    ],
+)
+
+# Permissive CORS so the Swagger UI 'Try it out' button works across origins
+# (e.g. local /docs hitting the HF Space backend, or vice versa).
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
@@ -174,15 +202,58 @@ async def health_check():
 
 
 @app.post("/predict", response_model=PredictionResponse, tags=["Prediction"])
-async def predict(patient_data: PatientData):
+async def predict(
+    patient_data: PatientData = Body(
+        ...,
+        openapi_examples={
+            "high_risk": {
+                "summary": "🔴 High-risk patient (expects prediction=1)",
+                "description": (
+                    "67-year-old male, asymptomatic chest pain, elevated BP/cholesterol, "
+                    "low max heart rate, exercise-induced angina, 3 major vessels affected. "
+                    "Mirrors `scripts/sample_payload_high_risk.json`."
+                ),
+                "value": {
+                    "age": 67, "sex": 1, "cp": 0, "trestbps": 160, "chol": 286,
+                    "fbs": 0, "restecg": 0, "thalach": 108, "exang": 1,
+                    "oldpeak": 1.5, "slope": 1, "ca": 3, "thal": 2,
+                },
+            },
+            "low_risk": {
+                "summary": "🟢 Low-risk patient (expects prediction=0)",
+                "description": (
+                    "45-year-old female, atypical angina, healthy BP/cholesterol, "
+                    "high max heart rate, no exercise-induced angina, no major vessels affected. "
+                    "Mirrors `scripts/sample_payload_low_risk.json`."
+                ),
+                "value": {
+                    "age": 45, "sex": 0, "cp": 1, "trestbps": 120, "chol": 200,
+                    "fbs": 0, "restecg": 0, "thalach": 170, "exang": 0,
+                    "oldpeak": 0.5, "slope": 1, "ca": 0, "thal": 2,
+                },
+            },
+            "validation_error": {
+                "summary": "❌ Invalid payload (expects HTTP 422)",
+                "description": (
+                    "`age` and `sex` are out of range. Demonstrates Pydantic field validation."
+                ),
+                "value": {
+                    "age": 250, "sex": 5, "cp": 3, "trestbps": 145, "chol": 233,
+                    "fbs": 1, "restecg": 0, "thalach": 150, "exang": 0,
+                    "oldpeak": 2.3, "slope": 0, "ca": 0, "thal": 1,
+                },
+            },
+        },
+    )
+):
     """
-    Predict heart disease risk for a patient
+    Predict heart disease risk for a patient.
 
-    Args:
-        patient_data: Patient health metrics
+    Pick a labelled example from the **Examples** dropdown above to try the
+    high-risk, low-risk, or validation-error scenarios without typing JSON.
 
     Returns:
-        Prediction result with probabilities and risk level
+        Prediction result with probabilities and risk level.
     """
     REQUEST_COUNT.inc()
 
