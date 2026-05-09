@@ -11,6 +11,11 @@ env:
   PYTHON_VERSION: '3.12'
   IMAGE_NAME: heart-disease-api
   REGISTRY: ghcr.io
+  # Opt JS actions onto the Node.js 24 runtime ahead of the
+  # 2026-06-02 default flip; silences the "Node.js 20 actions are
+  # deprecated" annotations on upload-artifact@v5,
+  # download-artifact@v5 and docker/build-push-action@v6.
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 
 jobs:
   # Job 1: Code Quality Checks
